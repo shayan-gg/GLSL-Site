@@ -23,7 +23,6 @@
     #define PI                          3.14159265
     #define _E =                        0.005
 
-
 // Hash
     float hash1( float n )
     {
@@ -293,35 +292,42 @@
     float GlyphSDF2(vec2 p)
     {
         // p = fract(p*16.);
-        // p = p/16.;
-        // p = p*16.;
+        // // p = p/16.;
+        p.x -=.5;
+        p = p*8.;
         // p *= 16.;
         // p.x += 5.;
         float char = charArr[0];
-        char = 240.;
+        // char = 66.;
 
         vec2 textPos = p;
         textPos.y += sin(time);
         float textScale = 5.;
         float distance3 = 1.;
-        float charWidth = 3.;
-        float charWidthTotal = charWidth * charLength /2. - 2.0 + textPos.x;
+        float charWidth = 1.;
+        float charWidthTotal = charWidth * charLength /2. + textPos.x;
+        // float charWidthTotal = charWidth * charLength /2. - 2.0 + textPos.x;
         vec2 charPos = p;
         float distTemp = 0.;
         float glyph;
+        vec2 glyphUV;
 
         for(float i = 0.0; i < min(charLength, 25.); ++i )
         {
-            charPos.x = charWidthTotal - i*charWidth;
-            //distTemp = textSDF(charPos, textScale, charArr[int(i)]);
-            //if (i == 0.) distance3 = distTemp;
-            distance3 = min(distance3, distTemp);
+            charPos.x = charWidthTotal - i * charWidth;
         }
-        
+        charPos.y -= 5.;
         // p = abs(p.x) > .5 || abs(p.y) > .5 ? vec2(0.) : p += .5;
-        vec2 glyphUV = p / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.);
-        glyphUV *= 16.;
+
+        glyphUV = charPos / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.);
+        
+        float mask2 = step((charPos.x), 1. ) * step(abs(charPos.y), 1.);
+        float mask = step((charPos.x-1.), 1. ) * mask2;
+
+        glyphUV = vec2( mix(0., glyphUV.x, mask) , mix(0., glyphUV.y, mask) );
+        // glyphUV *= 16.;
         glyph = 2. * (texture(textTex, glyphUV).w - 0.4980392157); //0.4980392157 = 127. / 255.
+        // return mask2;
         return glyph;
         return glyphUV.x * glyphUV.y;
         return p.x * p.y;
@@ -531,5 +537,8 @@ void main(){
     //vec2 r = glyphTest(vec2(vertexUV));
 
     //gl_FragColor = tex;
+    vec2 g = fract(vertexUV*.5);
+    g =vertexUV;
+    float grid = step(abs(g.x), 1.6) * step(abs(g.y), .5);
     gl_FragColor = vec4(vec2(r), 0., 1.);
 }

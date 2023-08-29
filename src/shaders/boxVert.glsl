@@ -5,7 +5,6 @@ uniform vec4 value;
 uniform vec3 color;
 uniform vec2 mouse;
 uniform vec2 mouse1;
-uniform float EPSv;
 uniform float charArr[25];
 uniform float charLength;
 uniform sampler2D textTex;

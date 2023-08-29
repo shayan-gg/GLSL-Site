@@ -5,7 +5,6 @@
     uniform vec3    color;
     uniform vec2    mouse;
     uniform vec2    mouse1;
-    uniform float   EPSv;
     uniform float charArr[25];
     uniform float charLength;
     uniform sampler2D textTex;
@@ -153,65 +152,7 @@
         float k = (sc.y*p.x > sc.x*p.y) ? dot(p.xy,sc) : length(p.xy);
         return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
     }
-    
-    float sdS9( vec3 p, float s )
-    {
-        vec2 t = vec2(value.z,value.w);
-        float circle = length(p.xy) * p.x;
-        vec2 q = vec2(circle - t.x, p.z);
-        float d = length(q) - t.y;
-        return d;
-    }
-
-    float sdS3r2( vec3 p, float a ) //S
-    {
-        float h = 2.0;
-        float r = 0.3 + value.w;
-        float y = p.y - 1.;
-        // p.x = p.x * sin(p.y+value.x)*value.y;
-        p.x = sin(p.y * -value.x)*.7 + p.x;
-        p.y -= clamp( p.y, 0.0, h );
-        float d = length( p ) - r;
-        return d;
-    }
-
-    float sdS6( vec3 p, float a ) //H
-    {
-        float h = 2.0;
-        float r = 0.3 + value.w;
-        vec2 p2 = p.xy;
-        p.x = abs(p.x)-1.;
-        p.y -= clamp( p.y, -h, h );
-        p2.x -= clamp( p2.x, -1., h*.5 );
-        float d1 = length( p ) - r;
-        float d2 = length( vec3(p2.x, p2.y, p.z )) - r;
-        return min(d1, d2);
-    }
-
-    float sdSa2(in vec3 p, float a ) //A2
-    {
-        float h = 2.0;
-        float w = 2.5;
-        float r = 0.3;
-        p.x = mix( (p.y +  p.x * 2.0 - w) , 0. , (p.y -  p.x * 2.0 - w) );
-        p.y -= clamp( p.y, 0.0, h );
-        return length( p ) - r;
-    }
-
-    float sdSa(in vec3 p, float a) //A
-    {
-        float h = 2.0;
-        float w = 2.5;
-        float r = 0.3;
-
-        float x = p.x*1.5 + p.y ;
-        float y = p.y - p.x*1.5 ;
-        y = smaxF(x, y, .5);
-        x = p.x - clamp( p.x, -2.0, h );
-        p.x -= clamp( p.x, -1.0, h*.5 );
-        return min( length(p), length(vec3(x, y - 2., p.z))-.3 ) - r;
-    }
-
+   
     float sdS(in vec3 p, float a) //A
     {
         float h = 2.0;
@@ -240,7 +181,7 @@
         float ra = value.z;
         float rb = value.w;
         vec2 sc = tc;
-
+        
         // vec2 q = vec2(length(p.xy)-ra,p.z);
         // return length(q)-rb;
         float an = value.x;
@@ -253,26 +194,7 @@
         return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
     
     }
-    
-    float hollowCube(in vec3 p, float a)
-    {
-        float h = 2.0;
-        float w = 2.5;
-        float r = 0.3;
 
-        float x = p.x + p.y;
-        float y = p.y - p.x;
-        p.y -= clamp(0., 1., x) + clamp(0., 1., y);
-        //p.y = p.y * tan(p.x - value.x );
-        p.x -= clamp( p.x, -2.0, h );
-        return length( p ) - r;
-    }
-
-    float sdArc( in vec2 p, in vec2 sc, in float ra, float rb )
-    {
-        p.x = abs(p.x);
-        return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*ra) : abs(length(p)-ra)) - rb;
-    }
 
     float sdSphere(vec3 p, float s) { 
         return length(p) - s;
@@ -289,84 +211,66 @@
         return min(max(dist.x, max(dist.y, dist.z)), 0.0) + length(max(dist, 0.0));
     }
     
-    float GlyphSDF2(vec2 p)
+    float GlyphSDF2(vec2 charPos)
     {
-        // p = fract(p*16.);
-        // // p = p/16.;
-        p.x -=.5;
-        p = p*8.;
-        // p *= 16.;
-        // p.x += 5.;
-        float char = charArr[0];
-        // char = 66.;
+        //Test
 
-        vec2 textPos = p;
-        textPos.y += sin(time);
-        float textScale = 5.;
-        float distance3 = 1.;
-        float charWidth = 1.;
-        float charWidthTotal = charWidth * charLength /2. + textPos.x;
-        // float charWidthTotal = charWidth * charLength /2. - 2.0 + textPos.x;
-        vec2 charPos = p;
-        float distTemp = 0.;
-        float glyph;
+            // charPos -= .5;
+            // charPos *= 8.;
+
+        //
+
+        float charWidthTotal = charLength * 0.5 + charPos.x;
         vec2 glyphUV;
+        float mask;
+        vec2 res = vec2(0.0);
 
-        for(float i = 0.0; i < min(charLength, 25.); ++i )
+        for(float i = 0.0; i < charLength; ++i )
         {
-            charPos.x = charWidthTotal - i * charWidth;
+            charPos.x = charWidthTotal - i;
+            mask = step(abs(charPos.x - 0.5), 0.5 );
+            glyphUV = charPos * 0.0625 + fract( vec2( charArr[int(i)], 15.0 - floor(charArr[int(i)] * 0.0625) ) * 0.0625 );
+            res += glyphUV * mask;
         }
-        charPos.y -= 5.;
-        // p = abs(p.x) > .5 || abs(p.y) > .5 ? vec2(0.) : p += .5;
 
-        glyphUV = charPos / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.);
-        
-        float mask2 = step((charPos.x), 1. ) * step(abs(charPos.y), 1.);
-        float mask = step((charPos.x-1.), 1. ) * mask2;
+        res *=  step(abs(charPos.y - 0.5), 0.5);
 
-        glyphUV = vec2( mix(0., glyphUV.x, mask) , mix(0., glyphUV.y, mask) );
-        // glyphUV *= 16.;
-        glyph = 2. * (texture(textTex, glyphUV).w - 0.4980392157); //0.4980392157 = 127. / 255.
-        // return mask2;
-        return glyph;
-        return glyphUV.x * glyphUV.y;
-        return p.x * p.y;
-    }
-
-    vec2 glyphTest(vec2 p)
-    {
-        float char = charArr[0];
-        p = abs(p.x) > .5 || abs(p.y) > .5 ? vec2(0.) : p += .5;
-        vec2 glyphUV = p / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.);
-        float glyph = 2. * (texture(textTex, glyphUV).w - 127. / 255.);
-        return glyphUV;
+        float glyph = (texture(textTex, res).w - 0.47); //0.4980392157 = 127. / 255.
+        return glyph + glyph;
     }
 
     float textSDF2(vec3 p, float s)
     {
         p.xy /= s;
         float text = GlyphSDF2(p.xy);
-        float cropBox = sdBox(p - vec3(0., 0.1, 0.), vec3(10., 1., .01));
-        // return cropBox;
-        return max(text, cropBox) + 0.05;
+        return max(text, abs(p.z));
     }
 
 // Backup
-    float GlyphSDF(vec2 p, float char)
-    {   
-        p += .5;
-        p = abs(p.x - .5) > .5 || abs(p.y - .5) > .5 ? vec2(0.) : p;
-        return 2. * (texture(textTex, p / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.)).w - 127. / 255.);
-    }
+    // float GlyphSDF(vec2 p, float char)
+    // {   
+    //     p += .5;
+    //     p = abs(p.x - .5) > .5 || abs(p.y - .5) > .5 ? vec2(0.) : p;
+    //     return 2. * (texture(textTex, p / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.)).w - 127. / 255.);
+    // }
 
-    float textSDF(vec3 p, float s, float char)
-    {
-        p.xy /= s;
-        float text = GlyphSDF(p.xy, char);
-        float cropBox = sdBox(p - vec3(0., 0.1, 0.), vec3(100., 100., .01));
-        return max(text, cropBox) + 0.05;
-    }
+    // float textSDF(vec3 p, float s, float char)
+    // {
+    //     p.xy /= s;
+    //     float text = GlyphSDF(p.xy, char);
+    //     float cropBox = sdBox(p - vec3(0., 0.1, 0.), vec3(100., 100., .01));
+    //     return max(text, cropBox) + 0.05;
+    // }
     
+    // vec2 glyphTest(vec2 p)
+    // {
+    //     float char = charArr[0];
+    //     p = abs(p.x) > .5 || abs(p.y) > .5 ? vec2(0.) : p += .5;
+    //     vec2 glyphUV = p / 16. + fract(vec2(char, 15. - floor(char / 16.)) / 16.);
+    //     float glyph = 2. * (texture(textTex, glyphUV).w - 127. / 255.);
+    //     return glyphUV;
+    // }
+
     
 // Raymarching
 vec4 scene(vec3 position) {
@@ -405,27 +309,14 @@ vec4 scene(vec3 position) {
     vec3 textPos = vec3(0., -1. , -3.) + position;
     textPos.y += sin(time);
     float textScale = 5.;
-    float distance3 = 1.;
-    float charWidth = 3.;
-    float charWidthTotal = charWidth * charLength /2. - 2.0 + textPos.x;
-    vec3 charPos = textPos;
-    float distTemp = 0.;
 
-    for(float i = 0.0; i < min(charLength, 25.); ++i )
-    {
-        charPos.x = charWidthTotal - i*charWidth;
-        distTemp = textSDF(charPos, textScale, charArr[int(i)]);
-        //if (i == 0.) distance3 = distTemp;
-        distance3 = min(distance3, distTemp);
-    }
-
-    distance3 = textSDF2(charPos, textScale);
+    float distance3 = textSDF2(textPos, textScale);
 
     vec4 //Merge all SDFs
         d = smoothUnion(vec4(distance, _Green), vec4(distance2, _White), 2.5);
         d = smoothUnion(vec4(d), vec4(distance3, vec3(color)), 0.5);
 
-    //return vec4(distance3, vec3(color));
+    // return vec4(distance3, vec3(color));
     return d;
 }
 
@@ -477,7 +368,7 @@ vec3 fog( in vec3 col, float t )
     return col*ext + (1.0-ext) * vec3(0.1333, 0.0, 0.2549); // 0.55
 }
 
-/*
+
 // Main Function
 void main()
 {
@@ -521,24 +412,23 @@ void main()
     //gl_FragColor = vec4(vec3(pV.x), 1.);
     //gl_FragColor = texture2D(textTex, uvReal);
 }
-*/
 
 
-void main(){
+// void main(){
 
-    //vec4 tex = texture2D(textTex, GlyphSDF(vec2(0), 65.)*10.);
-    // float t = value.x;
-    // vec2 uv = uvReal * 1.;
-    // float r = smoothstep(GlyphSDF( uvReal, floor(value.w*100.)), .001, .1);
+//     //vec4 tex = texture2D(textTex, GlyphSDF(vec2(0), 65.)*10.);
+//     // float t = value.x;
+//     // vec2 uv = uvReal * 1.;
+//     // float r = smoothstep(GlyphSDF( uvReal, floor(value.w*100.)), .001, .1);
 
-    // float r = smoothstep(GlyphSDF( vertexUV, charArr[0]), .001, .1);
-    float r = smoothstep(GlyphSDF2( uvReal ), .0, .1);
+//     // float r = smoothstep(GlyphSDF( vertexUV, charArr[0]), .001, .1);
+//     float r = smoothstep(GlyphSDF2( uvReal ), .0, .1);
 
-    //vec2 r = glyphTest(vec2(vertexUV));
+//     //vec2 r = glyphTest(vec2(vertexUV));
 
-    //gl_FragColor = tex;
-    vec2 g = fract(vertexUV*.5);
-    g =vertexUV;
-    float grid = step(abs(g.x), 1.6) * step(abs(g.y), .5);
-    gl_FragColor = vec4(vec2(r), 0., 1.);
-}
+//     //gl_FragColor = tex;
+//     vec2 g = fract(vertexUV*.5);
+//     g =vertexUV;
+//     float grid = step(abs(g.x), 1.6) * step(abs(g.y), .5);
+//     gl_FragColor = vec4(vec2(r), 0., 1.);
+// }

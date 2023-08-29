@@ -15,7 +15,6 @@ import boxFrag from './shaders/texFrag.glsl';
 
 const textTex = new THREE.TextureLoader().load('./assets/text.png');
 
-
 const stats = () => {
   const stats1 = new Stats();
   stats1.showPanel(0);
@@ -140,24 +139,24 @@ let boostSpeed = 1;
 let aspect = window.innerWidth/window.innerHeight;
 let lastFrames = [];
 let delay = 7; //frames
-let charArr = [24];
-let charLength = 1;
+// let charArr = [];
+let charLength = 0;
 
-charArr[0] = 65;
+// charArr[0] = [65];
+let charArr = [72,105,44,32,73,32,97,109,32,83,104,97,121,97,110,32,65,110,115,97,114,105];
+charLength = 22;
 
 const boxGeometry = new THREE.PlaneGeometry( 1.5, 1.5, 128, 128 ); 
 
 const boxMaterial = new THREE.ShaderMaterial({
   uniforms: {
   	time:         { value: clock.getElapsedTime() },
-  	resolution :  { value: new THREE.Vector2() },
     key :         { value: move },
     aspect :      { value: aspect },
     value :       { value: value },
     color :       { value: colorGUI },
     mouse :       { value: mousePos },
     mouse1 :      { value: mousePosDelayed },
-    EPSv :        { value: 0.000005 },
     textTex :     { value: textTex },
     charArr :     { value: charArr },
     charLength :  { value: charLength },
@@ -234,10 +233,6 @@ document.addEventListener("keypress", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  // if (event.code === 'Backspace' && charLength === 0)
-  // {
-  //   cube.material.uniforms.charArr.value[0] = 32;
-  // }
   console.log(cube.material.uniforms.charLength.value);
   if (event.code === 'Backspace' && charArr.length !== 0)
   {
@@ -249,45 +244,28 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-// create a ground plane
-// const planeGeometry = new THREE.PlaneGeometry(1000, 1000, 3000, 3000);
-// const planeMaterial = new THREE.ShaderMaterial({
-//   uniforms: {
-//   	time: { value: 1.0 },
-//   	resolution: { value: new THREE.Vector2() },
-//   },
-//   vertexShader: groundVert,
-//   fragmentShader: groundFrag,
-// });
-// const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-// plane.rotation.x = -Math.PI / 2;
-// scene.add(plane);
-
 // create a directional light
 const light = new THREE.DirectionalLight(0xffffff, 5);
 light.position.set(10, 20, 10);
 scene.add(light);
 
-// create a fog effect
-const fogColor = 0x16ffff;
-const fogNear = 10;
-const fogFar = 500;
+// // create a fog effect
+// const fogColor = 0x16ffff;
+// const fogNear = 10;
+// const fogFar = 500;
 //scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
 // scene.background = new THREE.Color(0x11ddFF);
 renderer.setClearColor( 0xffffff, 0);
 console.log(scene.background);
 
-// create a clock for delta time
-// const clock = new THREE.Clock();
-
 // define movement speed and direction
-const speed = 50; // units per second
-const speedFast = 200;
-let boost = false;
-let moveForward = false;
-let moveBackward = false;
-let moveLeft = false;
-let moveRight = false;
+// const speed = 50; // units per second
+// const speedFast = 200;
+// let boost = false;
+// let moveForward = false;
+// let moveBackward = false;
+// let moveLeft = false;
+// let moveRight = false;
 
 // add event listeners for keyboard input
 document.addEventListener("keydown", (event) => {
@@ -339,57 +317,38 @@ document.addEventListener("keyup", (event) => {
   }
 });
 
-
-let tris = 0;
-let trisPre = 0;
-
 // define animation loop
 function animate() {
   requestAnimationFrame(animate);
 
-  const delta = clock.getDelta();
+  // const delta = clock.getDelta();
 
   // update camera controls
   //const hasControlsUpdated = cameraControls.update(delta);
 
   // update camera position based on movement input
-  const direction = new THREE.Vector3();
-  camera.getWorldDirection(direction);
-  direction.y = 0; // ignore vertical component
-  direction.normalize(); // make unit vector
-
-  // console.log(boost);
-  // if (moveForward) camera.position.addScaledVector(direction, (boost?speedFast:speed) * delta);
-  // if (moveBackward) camera.position.addScaledVector(direction, -(boost?speedFast:speed) * delta);
-  // if (moveLeft) camera.rotation.y += .03; // camera.position.addScaledVector(direction.cross(camera.up), -speed * delta);
-  // if (moveRight) camera.rotation.y -= .03; // camera.position.addScaledVector(direction.cross(camera.up), speed * delta);
-
-  // // keep camera above ground
-  // if (camera.position.y < plane.position.y + 1) {
-  //   camera.position.y = plane.position.y + 1;
-  // }
+  // const direction = new THREE.Vector3();
+  // camera.getWorldDirection(direction);
+  // direction.y = 0; // ignore vertical component
+  // direction.normalize(); // make unit vector
 
   cube.material.uniforms.time.value = clock.getElapsedTime();
   value = new THREE.Vector4(guiObject.value1, guiObject.value2, guiObject.value3, guiObject.value4);
   colorGUI = guiObject.color;
   cube.material.uniforms.value.value = value;
   cube.material.uniforms.color.value = colorGUI;
-
-  renderer.render(scene, camera);
-  tris =  Math.floor(renderer.info.render.triangles/1000000);
-  if (tris > trisPre){ console.log(tris + 'M'); trisPre = tris; }
   
   lastFrames[delay] = (mousePos);
   mousePosDelayed = new THREE.Vector2(lastFrames[0]);
   mousePosDelayed = new THREE.Vector2(mousePosDelayed.x.x, mousePosDelayed.x.y);
   cube.material.uniforms.mouse1.value = mousePosDelayed;
   lastFrames.shift();
-  //console.log(mousePosDelayed);
 
-  
   move.x += key.x*boostSpeed;
   move.y += key.y*boostSpeed;
   cube.material.uniforms.key.value = move;
+
+  renderer.render(scene, camera);
 }
 
 // Handle window resizing events
@@ -402,7 +361,6 @@ function onWindowResize() {
   console.log('aspect ratio: ' + aspect);
   cube.scale.set(window.innerWidth/window.innerHeight, 1, 1);
   cube.material.uniforms.aspect.value = aspect;
-  cube.material.uniforms.EPSv.value = 0.000005;
 } window.addEventListener('resize', onWindowResize);
 
 animate();

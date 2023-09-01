@@ -239,11 +239,16 @@
         return glyph + glyph;
     }
 
-    float textSDF2(vec3 p, float s)
+    float textSDF2(vec3 p, float s, float w)
     {
-        p.xy /= s;
+        p.xy *= s;
+
+        vec2 mouseV = mix(mouse, mouse1, abs(vertexUV));
+        mouseV = clamp(mouseV, -1., 1.)*5.;
+        p.xy = vec2(p.x -mouseV.x, p.y +mouseV.y);
+        
         float text = GlyphSDF2(p.xy);
-        return max(text, abs(p.z));
+        return max(text, abs(p.z) + w);
     }
 
 // Backup
@@ -306,15 +311,17 @@ vec4 scene(vec3 position) {
     //float distance3 = GlyphSDF(uvReal, floor(value.w*100.));
     //float distance3 = GlyphSDF(uvReal, 65.);
     
-    vec3 textPos = vec3(0., -1. , -3.) + position;
-    textPos.y += sin(time);
-    float textScale = 5.;
+    vec3 textPos = vec3(0., -0. , -3.) + position;
+    // textPos.y += sin(time);
+    float textScale = 1.;
+    float textWidth = 0.09;
 
-    float distance3 = textSDF2(textPos, textScale);
+    float distance3 = textSDF2(textPos, textScale, textWidth);
 
     vec4 //Merge all SDFs
-        d = smoothUnion(vec4(distance, _Green), vec4(distance2, _White), 2.5);
-        d = smoothUnion(vec4(d), vec4(distance3, vec3(color)), 0.5);
+        d = vec4(distance, _Green);
+        // d = smoothUnion(d, vec4(distance2, _White), 2.5);
+        d = smoothUnion(d, vec4(distance3, vec3(color)), 0.5);
 
     // return vec4(distance3, vec3(color));
     return d;
@@ -374,11 +381,16 @@ void main()
 {
     // #include <fog_vertex>
 
-    vec3 direction = normalize(vec3(vertexUV, 2.5));
+    // vec3 direction = normalize(vec3(vertexUV, 2.5)); //FOV, direction
+    float fov = value.z;
+    //float sensorSize = value.w;
+    vec3 direction = normalize(vec3(vertexUV, fov)); //FOV, direction
+
     // if you rotate the direction with a rotatin matrix you can turn the camera too!
     direction = rotate3D(direction, vec3(0., -key.y*.1, 0.));
     
-    vec3 camera_origin = vec3(0.0, 2.0 + sin(time*2.), key.x-5.0); // you can move the camera here
+    // vec3 camera_origin = vec3(0.0, 2.0 + sin(time*2.), key.x-5.0);
+    vec3 camera_origin = vec3(0.0, 1.0, key.x - 20.0); // you can move the camera here
     
     vec4 result = raymarch(camera_origin, direction);
     
@@ -407,7 +419,11 @@ void main()
     //diffuseLit = clamp(diffuseLit, 0.0, 1.0);
     diffuseLit = fog(diffuseLit, result.x* 0.1);
     float alpha = 1.;
+
     // alpha = result.x < FAR_CLIPPING_PLANE ? alpha : 0.0;
+    vec2 mouseV = mix(mouse, mouse1, vertexUV);
+    mouseV = clamp(mouseV, -1., 1.) * 5.0;
+    // gl_FragColor = vec4(vec2(mouseV), 0.0, 1.0);
     gl_FragColor = vec4(sqrt(diffuseLit), alpha);
     //gl_FragColor = vec4(vec3(pV.x), 1.);
     //gl_FragColor = texture2D(textTex, uvReal);
